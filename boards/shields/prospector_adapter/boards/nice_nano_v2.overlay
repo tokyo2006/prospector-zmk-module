@@ -12,22 +12,22 @@
 };
 
 &pinctrl {
-   spi3_default: spi3_default {
-		group1 {
-			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>, //SCL
-				<NRF_PSEL(SPIM_MOSI, 1, 15)>, //SDA
-				<NRF_PSEL(SPIM_MISO, 1, 11)>;
-		};
-	};
+    spi0_default: spi0_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 0, 20)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 17)>,
+                <NRF_PSEL(SPIM_MISO, 0, 25)>;
+        };
+    };
 
-	spi3_sleep: spi3_sleep {
-		group1 {
-			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
-				<NRF_PSEL(SPIM_MOSI, 1, 15)>,
-				<NRF_PSEL(SPIM_MISO, 1, 11)>;
-			low-power-enable;
-		};
-	};
+    spi0_sleep: spi0_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 0, 20)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 17)>,
+                <NRF_PSEL(SPIM_MISO, 0, 25)>;
+            low-power-enable;
+        };
+    };
 
    pwm1_default: pwm1_default {
       group1 {
@@ -44,7 +44,7 @@
    };
 };
 
-disp_spi: &spi3 {
+disp_spi: &spi0 {
    status = "okay";
    pinctrl-0 = <&spi3_default>;
 	pinctrl-1 = <&spi3_sleep>;
