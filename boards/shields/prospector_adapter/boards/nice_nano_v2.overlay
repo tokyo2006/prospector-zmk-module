@@ -1,7 +1,3 @@
-&spi2 {
-   status = "disabled";
-};
-
 &pinctrl {
     spi2_default: spi2_default {
         group1 {
