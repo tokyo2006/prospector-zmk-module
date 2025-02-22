@@ -53,3 +53,5 @@ config LV_DISP_DEF_REFR_PERIOD
 choice LV_FONT_DEFAULT
     default LV_FONT_DEFAULT_MONTSERRAT_20
 endchoice
+
+endif
