@@ -56,13 +56,3 @@ disp_spi: &spi0 {
    };
 };
 
-&i2c0 {
-   status = "okay";
-
-   apds9960: apds9960@39 {
-       compatible = "avago,apds9960";
-       status = "okay";
-       reg = <0x39>;
-       int-gpios = <&gpio1 0 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-   };
-};
