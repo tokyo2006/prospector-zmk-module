@@ -3,7 +3,7 @@
 All the necessary stuff for [Prospector](https://github.com/carrefinho/prospector) to display things with ZMK. Currently functional albeit barebones.
 
 > [!IMPORTANT]
-> If you're looking for a ZMK Zephyr 4.1 update compatible version, there is a work-in-progress but functional [`core/zephyr-4-1` branch](https://github.com/carrefinho/prospector-zmk-module/tree/core/zephyr-4-1) available. Build with board `xiao_ble` instead of `seeeduino_xiao_ble`, no other changes needed.
+> This branch targets ZMK v0.3 and older (Zephyr 3.5). For ZMK main (Zephyr 4.1), see the [`core/zephyr-4-1` branch](https://github.com/carrefinho/prospector-zmk-module/tree/core/zephyr-4-1) or [`feat/new-status-screens` branch](https://github.com/carrefinho/prospector-zmk-module/tree/feat/new-status-screens) (new layouts, work-in-progress). Build with board `xiao_ble` instead of `seeeduino_xiao_ble`.
 
 ## Features
 
