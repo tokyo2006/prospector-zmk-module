@@ -1,0 +1,63 @@
+if SHIELD_PROSPECTOR_ADAPTER
+
+config ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING
+    default y
+
+config ZMK_DISPLAY
+   default y
+
+choice ZMK_DISPLAY_STATUS_SCREEN
+    default ZMK_DISPLAY_STATUS_SCREEN_CUSTOM
+endchoice
+
+rsource "src/layouts/*/Kconfig.defconfig"
+
+choice ZMK_DISPLAY_WORK_QUEUE
+    default ZMK_DISPLAY_WORK_QUEUE_DEDICATED
+endchoice
+
+choice ST7789V_PIXEL_FORMAT
+	default ST7789V_RGB565
+endchoice
+
+config LV_Z_VDB_SIZE
+    default 50
+
+config LV_Z_DOUBLE_VDB
+    default y
+
+config LV_Z_FLUSH_THREAD
+    default y
+
+config LV_Z_MEM_POOL_SIZE
+    default 16384
+
+config LV_DPI_DEF
+    default 261
+
+config LV_Z_BITS_PER_PIXEL
+	default 16
+
+choice LV_COLOR_DEPTH
+	default LV_COLOR_DEPTH_16
+endchoice
+
+config LV_COLOR_16_SWAP
+	default y
+
+choice LV_FONT_DEFAULT
+    default LV_FONT_DEFAULT_MONTSERRAT_20
+endchoice
+
+config PWM
+    default y
+
+config LED
+    default y
+
+config PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
+    default n
+    select SENSOR
+    select APDS9960
+
+endif
