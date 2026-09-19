@@ -38,26 +38,42 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: carrefinho                            # <--- add this
-      url-base: https://github.com/carrefinho     # <--- and this
+    - name: tokyo2006
+      url-base: https://github.com/tokyo2006
+    - name: a741725193
+      url-base: https://github.com/a741725193   # <--- and this
   projects:
     - name: zmk
       remote: zmkfirmware
       revision: main
       import: app/west.yml
     - name: prospector-zmk-module                 # <--- and these
-      remote: carrefinho                          # <---
-      revision: feat/new-status-screens           # <---
+      remote: tokyo2006                          # <---
+      revision: main      # <---
+    - name: zmk-board-eyelash
+      remote: a741725193
+      revision: v4.0
   self:
     path: config
 ```
 
 Then add the `prospector_adapter` shield to the dongle in your `build.yaml`:
 
+1. xiao_ble support
+
 ```yaml
 ---
 include:
-  - board: xiao_ble//zmk
+  - board: xiao_ble
+    shield: [YOUR KEYBOARD SHIELD]_dongle prospector_adapter
+```
+
+2. eyelash_nano support
+
+```yaml
+---
+include:
+  - board: eyelash_nano
     shield: [YOUR KEYBOARD SHIELD]_dongle prospector_adapter
 ```
 
@@ -113,6 +129,7 @@ CONFIG_PROSPECTOR_FIXED_BRIGHTNESS=80
 | `CONFIG_PROSPECTOR_SHOW_MODIFIERS` | Display modifier key indicators | y |
 | `CONFIG_PROSPECTOR_SHOW_INACTIVE_MODIFIERS` | Show inactive modifiers dimmed (Classic and Field only) | y |
 | `CONFIG_PROSPECTOR_MODIFIER_ORDER` | Order of modifiers: G=GUI, A=Alt, C=Ctrl, S=Shift | "GACS" |
+| `CONFIG_PROSPECTOR_MODIFIER_OS_MAC` / `_WINDOWS` / `_GENERIC` | Modifier label style: Mac (⌘⌥⌃⇧ symbols), Windows (WIN/ALT/CTRL/SHFT), or Generic (GUI/ALT/CTRL/SHFT) text | Mac
 
 ### Field-specific
 | Name | Description | Default |
@@ -120,6 +137,20 @@ CONFIG_PROSPECTOR_FIXED_BRIGHTNESS=80
 | `CONFIG_PROSPECTOR_ANIMATION_WPM_REFERENCE` | WPM value at which animation reaches max speed | 70 |
 | `CONFIG_PROSPECTOR_ANIMATION_INTENSITY_DECAY_SEC` | Seconds for lines to fade out after typing stops | 30 |
 | `CONFIG_PROSPECTOR_ANIMATION_FLOW_DECAY_SEC` | Seconds for line directions and length to settle | 300 |
+
+### Themes (Radii)
+
+The Radii layout reads its color palette from a `zmk,prospector-theme` devicetree node. Four built-in themes are defined in `prospector_adapter.overlay`: `prospector_green_theme`, `prospector_blue_theme` (default), `prospector_red_theme`, `prospector_purple_theme`. Select one in your own overlay:
+
+```dts
+/ {
+  chosen {
+    zmk,prospector-theme = &prospector_green_theme;
+  };
+};
+```
+
+Or define a custom theme by adding a node with `compatible = "zmk,prospector-theme";` and any of the properties in `dts/bindings/zmk,prospector-theme.yaml` (`left-panel-bg`, `mod-panel-bg`, `battery-panel-bg`, `arc-bg`, `arc-indicator`, `layer-wheel-color`, `layer-text-color`, `mod-active-color`, `mod-inactive-color`), then reference it the same way.
 
 ## Troubleshooting
 
@@ -139,6 +170,5 @@ CONFIG_LV_Z_VDB_SIZE=25
 ## To-Do
 
 - Operator: per-profile BLE status
-- Radii: document and improve color theme customization
-- OS-specific modifier styles
+- Radii: more built-in themes / easier customization
 - Caps lock indication
