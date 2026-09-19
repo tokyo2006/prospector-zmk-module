@@ -31,14 +31,14 @@
 
    pwm1_default: pwm1_default {
       group1 {
-         psels = <NRF_PSEL(PWM_OUT0, 1, 11)>;
+         psels = <NRF_PSEL(PWM_OUT0, 1, 2)>;
          nordic,invert;
       };
    };
 
    pwm1_sleep: pwm1_sleep {
       group1 {
-         psels = <NRF_PSEL(PWM_OUT0, 1, 11)>;
+         psels = <NRF_PSEL(PWM_OUT0, 1, 2)>;
          low-power-enable;
       };
    };
