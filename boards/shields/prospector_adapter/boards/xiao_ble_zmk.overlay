@@ -84,7 +84,7 @@ disp_spi: &spi3 {
 
    apds9960: apds9960@39 {
        compatible = "avago,apds9960";
-       status = "okay";
+       status = "disabled";
        reg = <0x39>;
        int-gpios = <&xiao_d 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
    };
