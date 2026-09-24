@@ -6,6 +6,7 @@
 #include <zmk/keymap.h>
 
 #include "display_colors.h"
+#include "layout_dims.h"
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -37,12 +38,12 @@ ZMK_SUBSCRIPTION(widget_layer_display, zmk_layer_state_changed);
 
 int zmk_widget_layer_display_init(struct zmk_widget_layer_display *widget, lv_obj_t *parent) {
     widget->obj = lv_obj_create(parent);
-    lv_obj_set_size(widget->obj, 300, 6);
+    lv_obj_set_size(widget->obj, OPERATOR_CONTENT_WIDTH, 6);
     lv_obj_set_style_bg_opa(widget->obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
 
-    int dot_width = (300 - (LAYER_DOT_COUNT - 1) * 3) / LAYER_DOT_COUNT;
+    int dot_width = (OPERATOR_CONTENT_WIDTH - (LAYER_DOT_COUNT - 1) * 3) / LAYER_DOT_COUNT;
     int dot_gap = 3;
 
     for (int i = 0; i < LAYER_DOT_COUNT; i++) {

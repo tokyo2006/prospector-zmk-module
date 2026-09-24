@@ -11,6 +11,7 @@
 
 #include <fonts.h>
 #include "display_colors.h"
+#include "layout_dims.h"
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 static struct k_work_delayable wpm_smooth_work;
@@ -51,7 +52,7 @@ static void wpm_meter_render(int active_bars) {
             int bar_width = 8;
             int bar_gap = 2;
             int total_width = WPM_BAR_COUNT * bar_width + (WPM_BAR_COUNT - 1) * bar_gap;
-            int start_x = (300 - total_width) / 2;
+            int start_x = (OPERATOR_CONTENT_WIDTH - total_width) / 2;
             int peak_slot = (peak_position > active_bars + 1) ? (peak_position - 1) : active_bars;
             if (peak_slot >= WPM_BAR_COUNT) peak_slot = WPM_BAR_COUNT - 1;
             int peak_x = start_x + peak_slot * (bar_width + bar_gap) + 2;
@@ -157,16 +158,16 @@ ZMK_SUBSCRIPTION(widget_wpm_meter_layer, zmk_layer_state_changed);
 
 int zmk_widget_wpm_meter_init(struct zmk_widget_wpm_meter *widget, lv_obj_t *parent) {
     widget->obj = lv_obj_create(parent);
-    lv_obj_set_size(widget->obj, 300, 70);
+    lv_obj_set_size(widget->obj, OPERATOR_CONTENT_WIDTH, OPERATOR_WPM_HEIGHT);
     lv_obj_set_style_bg_opa(widget->obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
 
     int bar_width = 8;
     int bar_gap = 2;
-    int bar_height = 70;
+    int bar_height = OPERATOR_WPM_HEIGHT;
     int total_width = WPM_BAR_COUNT * bar_width + (WPM_BAR_COUNT - 1) * bar_gap;
-    int start_x = (300 - total_width) / 2;
+    int start_x = (OPERATOR_CONTENT_WIDTH - total_width) / 2;
 
     for (int i = 0; i < WPM_BAR_COUNT; i++) {
         widget->bars[i] = lv_obj_create(widget->obj);

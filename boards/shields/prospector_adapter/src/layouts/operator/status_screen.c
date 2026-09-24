@@ -5,6 +5,7 @@
 #include "layer_display.h"
 #include "battery_circles.h"
 #include "output.h"
+#include "layout_dims.h"
 
 #include <fonts.h>
 
@@ -23,18 +24,18 @@ lv_obj_t *zmk_display_status_screen() {
     lv_obj_set_pos(zmk_widget_modifier_indicator_obj(&modifier_indicator_widget), 25, 8);
 
     zmk_widget_wpm_meter_init(&wpm_meter_widget, screen);
-    lv_obj_set_size(zmk_widget_wpm_meter_obj(&wpm_meter_widget), 300, 70);
+    lv_obj_set_size(zmk_widget_wpm_meter_obj(&wpm_meter_widget), OPERATOR_CONTENT_WIDTH, OPERATOR_WPM_HEIGHT);
     lv_obj_set_pos(zmk_widget_wpm_meter_obj(&wpm_meter_widget), 10, 42);
 
     zmk_widget_layer_display_init(&layer_display_widget, screen);
-    lv_obj_set_size(zmk_widget_layer_display_obj(&layer_display_widget), 300, 6);
-    lv_obj_set_pos(zmk_widget_layer_display_obj(&layer_display_widget), 10, 122);
+    lv_obj_set_size(zmk_widget_layer_display_obj(&layer_display_widget), OPERATOR_CONTENT_WIDTH, 6);
+    lv_obj_set_pos(zmk_widget_layer_display_obj(&layer_display_widget), 10, OPERATOR_LAYER_Y);
 
     zmk_widget_battery_circles_init(&battery_circles_widget, screen);
-    lv_obj_set_pos(zmk_widget_battery_circles_obj(&battery_circles_widget), 11, 110);
+    lv_obj_set_pos(zmk_widget_battery_circles_obj(&battery_circles_widget), 11, OPERATOR_BOTTOM_Y);
 
     zmk_widget_output_init(&output_widget, screen);
-    lv_obj_set_pos(zmk_widget_output_obj(&output_widget), 198, 110);
+    lv_obj_set_pos(zmk_widget_output_obj(&output_widget), OPERATOR_OUTPUT_X, OPERATOR_BOTTOM_Y);
 
     return screen;
 }
