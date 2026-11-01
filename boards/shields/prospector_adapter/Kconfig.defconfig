@@ -60,4 +60,11 @@ config PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
     select SENSOR if PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
     select APDS9960 if PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
 
+config LV_USE_BTN
+    default y
+config LV_USE_SWITCH
+    default y
+config LV_USE_SLIDER
+    default y
+
 endif

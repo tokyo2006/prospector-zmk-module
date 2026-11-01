@@ -13,6 +13,12 @@ if(CONFIG_SHIELD_PROSPECTOR_ADAPTER)
   zephyr_library_sources(src/custom_status_screen.c)
   zephyr_library_sources(src/display_rotate_init.c)
 
+  if(CONFIG_PROSPECTOR_TOUCH_UI)
+    zephyr_library_sources(src/touch_handler.c)
+    zephyr_library_sources(src/touch_ui.c)
+    zephyr_library_sources(src/events/swipe_gesture_event.c)
+  endif()
+
   if(CONFIG_PROSPECTOR_SHOW_MODIFIERS)
     zephyr_library_sources(src/modifier_order.c)
   endif()

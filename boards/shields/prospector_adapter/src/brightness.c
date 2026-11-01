@@ -1,9 +1,14 @@
+#include <string.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/led.h>
+#include <zephyr/settings/settings.h>
 #include <zephyr/sys/printk.h>
+
+#include "brightness.h"
 
 #include <zmk/activity.h>
 #include <zmk/event_manager.h>
@@ -23,6 +28,117 @@ static const struct device *pwm_leds_dev = DEVICE_DT_GET_ONE(pwm_leds);
 
 static uint8_t current_brightness = PROSPECTOR_INITIAL_BRIGHTNESS;
 static bool display_blanked;
+
+static struct prospector_brightness_settings {
+    bool auto_enabled;
+    uint8_t manual_level;
+} brightness_settings = {
+#if IS_ENABLED(CONFIG_PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR)
+    .auto_enabled = true,
+    .manual_level = 100,
+#else
+    .auto_enabled = false,
+    .manual_level = CONFIG_PROSPECTOR_FIXED_BRIGHTNESS,
+#endif
+};
+
+static void prospector_brightness_save(void);
+
+static void prospector_brightness_apply(void) {
+    if (display_blanked || !device_is_ready(pwm_leds_dev)) {
+        return;
+    }
+
+    if (brightness_settings.auto_enabled) {
+        return;
+    }
+
+    current_brightness = brightness_settings.manual_level;
+    led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness);
+}
+
+bool prospector_brightness_get_auto(void) { return brightness_settings.auto_enabled; }
+
+uint8_t prospector_brightness_get_manual(void) { return brightness_settings.manual_level; }
+
+void prospector_brightness_set_manual(uint8_t level) {
+    if (level < 1) {
+        level = 1;
+    } else if (level > 100) {
+        level = 100;
+    }
+
+    brightness_settings.auto_enabled = false;
+    brightness_settings.manual_level = level;
+    current_brightness = level;
+
+    if (!display_blanked && device_is_ready(pwm_leds_dev)) {
+        led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness);
+    }
+
+    prospector_brightness_save();
+}
+
+void prospector_brightness_set_auto(bool enabled) {
+    if (!IS_ENABLED(CONFIG_PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR)) {
+        brightness_settings.auto_enabled = false;
+        return;
+    }
+
+    brightness_settings.auto_enabled = enabled;
+
+    if (!enabled) {
+        current_brightness = brightness_settings.manual_level;
+        if (!display_blanked && device_is_ready(pwm_leds_dev)) {
+            led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness);
+        }
+    }
+
+    prospector_brightness_save();
+}
+
+#if IS_ENABLED(CONFIG_SETTINGS)
+static int prospector_brightness_load_cb(const char *name, size_t len,
+                                         settings_read_cb read_cb, void *cb_arg) {
+    if (strcmp(name, "brightness") != 0 || len != sizeof(brightness_settings)) {
+        return -ENOENT;
+    }
+
+    int rc = read_cb(cb_arg, &brightness_settings, sizeof(brightness_settings));
+    if (rc < 0) {
+        return rc;
+    }
+
+    if (brightness_settings.manual_level < 1) {
+        brightness_settings.manual_level = 1;
+    } else if (brightness_settings.manual_level > 100) {
+        brightness_settings.manual_level = 100;
+    }
+
+    if (!IS_ENABLED(CONFIG_PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR)) {
+        brightness_settings.auto_enabled = false;
+    }
+
+    prospector_brightness_apply();
+    return 0;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(prospector_brightness, "prosp", NULL,
+                               prospector_brightness_load_cb, NULL, NULL);
+
+static void prospector_brightness_save_work_cb(struct k_work *work) {
+    settings_save_one("prosp/brightness", &brightness_settings, sizeof(brightness_settings));
+}
+
+static K_WORK_DELAYABLE_DEFINE(prospector_brightness_save_work,
+                               prospector_brightness_save_work_cb);
+
+static void prospector_brightness_save(void) {
+    k_work_reschedule(&prospector_brightness_save_work, K_MSEC(500));
+}
+#else
+static void prospector_brightness_save(void) {}
+#endif
 
 #ifdef CONFIG_PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
 
@@ -65,8 +181,9 @@ uint8_t map_light_to_pwm(int32_t sensor_reading) {
 uint8_t bl_fade(uint8_t source, uint8_t target) {
     bool increasing = target > source;
 
-    while (!display_blanked && ((increasing && current_brightness < target) ||
-                                (!increasing && current_brightness > target))) {
+    while (brightness_settings.auto_enabled && !display_blanked &&
+           ((increasing && current_brightness < target) ||
+            (!increasing && current_brightness > target))) {
 
         if (led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness)) {
             LOG_ERR("Failed to set brightness");
@@ -110,6 +227,10 @@ extern void als_thread(void *d0, void *d1, void *d2) {
     while (1) {
 
         k_msleep(NORMAL_SAMPLE_SLEEP_MS);
+
+        if (!brightness_settings.auto_enabled) {
+            continue;
+        }
 
         if (display_blanked) {
             continue;
@@ -166,6 +287,8 @@ K_THREAD_DEFINE(als_tid, 1024, als_thread, NULL, NULL, NULL, K_LOWEST_APPLICATIO
 #else
 
 static int init_fixed_brightness(void) {
+    brightness_settings.auto_enabled = false;
+    brightness_settings.manual_level = CONFIG_PROSPECTOR_FIXED_BRIGHTNESS;
     current_brightness = CONFIG_PROSPECTOR_FIXED_BRIGHTNESS;
     led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness);
 

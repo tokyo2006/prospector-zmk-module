@@ -96,3 +96,41 @@ config PROSPECTOR_MIN_IDLE_TIMEOUT_MS
     help
       At boot, raise a stored non-zero activity idle timeout that is lower
       than this value.  Set to 0 to respect the stored/Studio value as-is.
+
+
+config PROSPECTOR_TOUCH_UI
+    bool "Enable CST816S touch UI"
+    default n
+    depends on SHIELD_PROSPECTOR_ADAPTER
+    select INPUT
+    select INPUT_CST816S
+    select INPUT_CST816S_INTERRUPT
+    help
+      Add CST816S touch swipes, Display Settings and Quick Actions overlays
+      on top of the existing status screen. The board overlay must define an
+      lcd_touch node.
+
+if PROSPECTOR_TOUCH_UI
+
+choice PROSPECTOR_TOUCH_ROTATION
+    prompt "Touch panel rotation"
+    default PROSPECTOR_TOUCH_ROTATION_90 if PROSPECTOR_ROTATE_DISPLAY_180
+    default PROSPECTOR_TOUCH_ROTATION_270
+
+config PROSPECTOR_TOUCH_ROTATION_90
+    bool "90 degrees"
+
+config PROSPECTOR_TOUCH_ROTATION_270
+    bool "270 degrees"
+
+endchoice
+
+config PROSPECTOR_TOUCH_INVERT_X
+    bool "Invert touch X axis"
+    default n
+
+config PROSPECTOR_TOUCH_INVERT_Y
+    bool "Invert touch Y axis"
+    default n
+
+endif
