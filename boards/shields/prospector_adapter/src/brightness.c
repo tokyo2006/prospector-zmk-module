@@ -5,6 +5,10 @@
 #include <zephyr/drivers/led.h>
 #include <zephyr/sys/printk.h>
 
+#include <zmk/activity.h>
+#include <zmk/event_manager.h>
+#include <zmk/events/activity_state_changed.h>
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(als, 4);
 
@@ -12,8 +16,15 @@ static const struct device *pwm_leds_dev = DEVICE_DT_GET_ONE(pwm_leds);
 #define DISP_BL DT_NODE_CHILD_IDX(DT_NODELABEL(disp_bl))
 
 #ifdef CONFIG_PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
+#define PROSPECTOR_INITIAL_BRIGHTNESS 100
+#else
+#define PROSPECTOR_INITIAL_BRIGHTNESS CONFIG_PROSPECTOR_FIXED_BRIGHTNESS
+#endif
 
-static uint8_t current_brightness = 100;
+static uint8_t current_brightness = PROSPECTOR_INITIAL_BRIGHTNESS;
+static bool display_blanked;
+
+#ifdef CONFIG_PROSPECTOR_USE_AMBIENT_LIGHT_SENSOR
 
 #define SENSOR_MIN      0       // Minimum sensor reading
 #define SENSOR_MAX      100   // Maximum sensor reading
@@ -54,8 +65,8 @@ uint8_t map_light_to_pwm(int32_t sensor_reading) {
 uint8_t bl_fade(uint8_t source, uint8_t target) {
     bool increasing = target > source;
 
-    while ((increasing && current_brightness < target) ||
-           (!increasing && current_brightness > target)) {
+    while (!display_blanked && ((increasing && current_brightness < target) ||
+                                (!increasing && current_brightness > target))) {
 
         if (led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness)) {
             LOG_ERR("Failed to set brightness");
@@ -71,6 +82,10 @@ uint8_t bl_fade(uint8_t source, uint8_t target) {
         }
 
         k_msleep(increasing ? FADE_SLEEP_BRIGHTEN_MS : FADE_SLEEP_DARKEN_MS);
+    }
+
+    if (display_blanked) {
+        led_set_brightness(pwm_leds_dev, DISP_BL, 0);
     }
 
     return 0;
@@ -96,6 +111,9 @@ extern void als_thread(void *d0, void *d1, void *d2) {
 
         k_msleep(NORMAL_SAMPLE_SLEEP_MS);
 
+        if (display_blanked) {
+            continue;
+        }
 
         if (sensor_sample_fetch(dev)) {
             LOG_ERR("sensor_sample fetch failed\n");
@@ -148,11 +166,60 @@ K_THREAD_DEFINE(als_tid, 1024, als_thread, NULL, NULL, NULL, K_LOWEST_APPLICATIO
 #else
 
 static int init_fixed_brightness(void) {
-    led_set_brightness(pwm_leds_dev, DISP_BL, CONFIG_PROSPECTOR_FIXED_BRIGHTNESS);
+    current_brightness = CONFIG_PROSPECTOR_FIXED_BRIGHTNESS;
+    led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness);
 
     return 0;
 }
 
 SYS_INIT(init_fixed_brightness, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
+#endif
+
+#if IS_ENABLED(CONFIG_PROSPECTOR_BACKLIGHT_OFF_ON_IDLE)
+static int prospector_display_activity_cb(const zmk_event_t *eh) {
+    const struct zmk_activity_state_changed *ev = as_zmk_activity_state_changed(eh);
+
+    if (ev == NULL || !device_is_ready(pwm_leds_dev)) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+
+    switch (ev->state) {
+    case ZMK_ACTIVITY_ACTIVE:
+        display_blanked = false;
+        led_set_brightness(pwm_leds_dev, DISP_BL, current_brightness);
+        break;
+    case ZMK_ACTIVITY_IDLE:
+    case ZMK_ACTIVITY_SLEEP:
+        display_blanked = true;
+        led_set_brightness(pwm_leds_dev, DISP_BL, 0);
+        break;
+    default:
+        break;
+    }
+
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(prospector_display_activity, prospector_display_activity_cb);
+ZMK_SUBSCRIPTION(prospector_display_activity, zmk_activity_state_changed);
+#endif
+
+#if CONFIG_PROSPECTOR_MIN_IDLE_TIMEOUT_MS > 0
+static void prospector_min_idle_work_cb(struct k_work *work) {
+    uint32_t current = zmk_activity_get_idle_ms();
+
+    if (current > 0 && current < CONFIG_PROSPECTOR_MIN_IDLE_TIMEOUT_MS) {
+        zmk_activity_set_idle_ms(CONFIG_PROSPECTOR_MIN_IDLE_TIMEOUT_MS);
+    }
+}
+
+static K_WORK_DELAYABLE_DEFINE(prospector_min_idle_work, prospector_min_idle_work_cb);
+
+static int prospector_min_idle_init(void) {
+    k_work_schedule(&prospector_min_idle_work, K_SECONDS(2));
+    return 0;
+}
+
+SYS_INIT(prospector_min_idle_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 #endif

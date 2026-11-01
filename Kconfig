@@ -81,3 +81,18 @@ config PROSPECTOR_LAYER_NAME_UPPERCASE
     default y
     help
       When enabled, layer names will be converted to uppercase for display.
+
+config PROSPECTOR_BACKLIGHT_OFF_ON_IDLE
+    bool "Turn off display backlight when the display blanks"
+    default n
+    help
+      Set the Prospector PWM backlight to 0 while ZMK is idle or asleep and
+      restore the previous brightness when activity resumes.
+
+config PROSPECTOR_MIN_IDLE_TIMEOUT_MS
+    int "Minimum activity idle timeout (ms, 0 = leave unchanged)"
+    default 0
+    range 0 3600000
+    help
+      At boot, raise a stored non-zero activity idle timeout that is lower
+      than this value.  Set to 0 to respect the stored/Studio value as-is.
