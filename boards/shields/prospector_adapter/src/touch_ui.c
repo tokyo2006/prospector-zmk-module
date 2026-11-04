@@ -276,6 +276,9 @@ static lv_obj_t *debug_label;
 static char debug_i2c0[48];
 static char debug_i2c1[48];
 static char debug_id[16];
+static bool debug_scanned;
+
+static const uint8_t debug_scan_addrs[] = {0x15, 0x39};
 
 static void scan_i2c(const struct device *bus, char *out, size_t out_len) {
     size_t pos = 0;
@@ -288,7 +291,8 @@ static void scan_i2c(const struct device *bus, char *out, size_t out_len) {
         return;
     }
 
-    for (uint8_t addr = 0x08; addr < 0x78; addr++) {
+    for (size_t i = 0; i < ARRAY_SIZE(debug_scan_addrs); i++) {
+        uint8_t addr = debug_scan_addrs[i];
         uint8_t dummy = 0;
         int rc = i2c_write(bus, &dummy, 1, addr);
         if (rc != 0) {
@@ -305,6 +309,22 @@ static void scan_i2c(const struct device *bus, char *out, size_t out_len) {
 
     if (found == 0) {
         snprintf(out, out_len, "-");
+    }
+}
+
+static void debug_scan(void) {
+    const struct device *i2c0 = DEVICE_DT_GET(DT_NODELABEL(i2c0));
+    const struct device *i2c1 = DEVICE_DT_GET(DT_NODELABEL(i2c1));
+    uint8_t chip_id = 0;
+
+    scan_i2c(i2c0, debug_i2c0, sizeof(debug_i2c0));
+    scan_i2c(i2c1, debug_i2c1, sizeof(debug_i2c1));
+
+    if (device_is_ready(i2c0) &&
+        i2c_reg_read_byte(i2c0, 0x15, 0xA7, &chip_id) == 0) {
+        snprintf(debug_id, sizeof(debug_id), "0x%02X", chip_id);
+    } else {
+        snprintf(debug_id, sizeof(debug_id), "?");
     }
 }
 
@@ -326,20 +346,6 @@ static void debug_update_cb(lv_timer_t *timer) {
 static void debug_create_work_cb(struct k_work *work) {
     ARG_UNUSED(work);
 
-    const struct device *i2c0 = DEVICE_DT_GET(DT_NODELABEL(i2c0));
-    const struct device *i2c1 = DEVICE_DT_GET(DT_NODELABEL(i2c1));
-    uint8_t chip_id = 0;
-
-    scan_i2c(i2c0, debug_i2c0, sizeof(debug_i2c0));
-    scan_i2c(i2c1, debug_i2c1, sizeof(debug_i2c1));
-
-    if (device_is_ready(i2c0) &&
-        i2c_reg_read_byte(i2c0, 0x15, 0xA7, &chip_id) == 0) {
-        snprintf(debug_id, sizeof(debug_id), "0x%02X", chip_id);
-    } else {
-        snprintf(debug_id, sizeof(debug_id), "?");
-    }
-
     debug_label = lv_label_create(lv_layer_top());
     lv_obj_set_style_text_color(debug_label, lv_color_white(), 0);
     lv_obj_set_style_bg_color(debug_label, lv_color_black(), 0);
@@ -358,6 +364,11 @@ static K_WORK_DELAYABLE_DEFINE(debug_schedule_work, debug_schedule_cb);
 
 static void debug_schedule_cb(struct k_work *work) {
     ARG_UNUSED(work);
+
+    if (!debug_scanned) {
+        debug_scan();
+        debug_scanned = true;
+    }
 
     if (!zmk_display_is_initialized()) {
         k_work_schedule(&debug_schedule_work, K_SECONDS(1));
