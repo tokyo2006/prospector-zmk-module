@@ -278,7 +278,7 @@ static char debug_i2c1[48];
 static char debug_id[16];
 static bool debug_scanned;
 
-static const uint8_t debug_scan_addrs[] = {0x15, 0x39};
+static const uint8_t debug_scan_addrs[] = {0x14, 0x15, 0x1A, 0x2E, 0x38, 0x39, 0x5D};
 
 static void scan_i2c(const struct device *bus, char *out, size_t out_len) {
     size_t pos = 0;
@@ -294,7 +294,10 @@ static void scan_i2c(const struct device *bus, char *out, size_t out_len) {
     for (size_t i = 0; i < ARRAY_SIZE(debug_scan_addrs); i++) {
         uint8_t addr = debug_scan_addrs[i];
         uint8_t dummy = 0;
-        int rc = i2c_write(bus, &dummy, 1, addr);
+        int rc = i2c_write(bus, NULL, 0, addr);
+        if (rc != 0) {
+            rc = i2c_write(bus, &dummy, 1, addr);
+        }
         if (rc != 0) {
             rc = i2c_read(bus, &dummy, 1, addr);
         }
@@ -352,7 +355,7 @@ static void debug_create_work_cb(struct k_work *work) {
     lv_obj_set_style_bg_opa(debug_label, LV_OPA_70, 0);
     lv_obj_set_style_pad_all(debug_label, 2, 0);
     lv_obj_set_style_text_font(debug_label, &lv_font_montserrat_12, 0);
-    lv_obj_set_pos(debug_label, 2, 2);
+    lv_obj_set_pos(debug_label, 30, 2);
     lv_label_set_text(debug_label, "touch debug");
     lv_timer_create(debug_update_cb, 500, NULL);
 }
