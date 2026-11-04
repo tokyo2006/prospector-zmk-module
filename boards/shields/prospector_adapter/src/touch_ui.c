@@ -300,6 +300,9 @@ static void debug_create_work_cb(struct k_work *work) {
 
 static K_WORK_DEFINE(debug_create_work, debug_create_work_cb);
 
+static void debug_schedule_cb(struct k_work *work);
+static K_WORK_DELAYABLE_DEFINE(debug_schedule_work, debug_schedule_cb);
+
 static void debug_schedule_cb(struct k_work *work) {
     ARG_UNUSED(work);
 
@@ -310,8 +313,6 @@ static void debug_schedule_cb(struct k_work *work) {
 
     k_work_submit_to_queue(zmk_display_work_q(), &debug_create_work);
 }
-
-static K_WORK_DELAYABLE_DEFINE(debug_schedule_work, debug_schedule_cb);
 
 static int debug_ui_init(void) {
     k_work_schedule(&debug_schedule_work, K_SECONDS(3));
