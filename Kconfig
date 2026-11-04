@@ -104,7 +104,6 @@ config PROSPECTOR_TOUCH_UI
     depends on SHIELD_PROSPECTOR_ADAPTER
     select INPUT
     select INPUT_CST816S
-    select INPUT_CST816S_INTERRUPT
     help
       Add CST816S touch swipes, Display Settings and Quick Actions overlays
       on top of the existing status screen. The board overlay must define an
