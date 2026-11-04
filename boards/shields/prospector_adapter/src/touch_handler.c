@@ -85,6 +85,8 @@ static void raise_swipe_event(enum swipe_direction direction) {
 static void touch_input_callback(struct input_event *evt, void *user_data) {
     ARG_UNUSED(user_data);
 
+    LOG_DBG("input type=%d code=%d value=%d", evt->type, evt->code, evt->value);
+
     switch (evt->code) {
     case INPUT_ABS_X:
         current_x = (uint16_t)evt->value;
