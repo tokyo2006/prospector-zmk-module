@@ -140,6 +140,24 @@ static void touch_input_callback(struct input_event *evt, void *user_data) {
 
 INPUT_CALLBACK_DEFINE(DEVICE_DT_GET(TOUCH_NODE), touch_input_callback, NULL);
 
+#if IS_ENABLED(CONFIG_PROSPECTOR_TOUCH_DEBUG)
+static void touch_debug_timer_cb(struct k_timer *timer) {
+    ARG_UNUSED(timer);
+    LOG_INF("touch alive active=%d x=%u y=%u", touch_active, current_x, current_y);
+}
+
+K_TIMER_DEFINE(touch_debug_timer, touch_debug_timer_cb, NULL);
+
+static int touch_debug_init(void) {
+    const struct device *dev = DEVICE_DT_GET(TOUCH_NODE);
+    LOG_INF("CST816S device ready=%d", device_is_ready(dev));
+    k_timer_start(&touch_debug_timer, K_SECONDS(2), K_SECONDS(2));
+    return 0;
+}
+
+SYS_INIT(touch_debug_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+#endif
+
 static void lvgl_input_read(lv_indev_t *indev, lv_indev_data_t *data) {
     ARG_UNUSED(indev);
 
