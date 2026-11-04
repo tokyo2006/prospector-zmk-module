@@ -1,5 +1,8 @@
+#include <stdio.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/logging/log.h>
 
@@ -270,6 +273,40 @@ ZMK_SUBSCRIPTION(prospector_touch_ui, zmk_swipe_gesture_event);
 
 #if IS_ENABLED(CONFIG_PROSPECTOR_TOUCH_DEBUG)
 static lv_obj_t *debug_label;
+static char debug_i2c0[48];
+static char debug_i2c1[48];
+static char debug_id[16];
+
+static void scan_i2c(const struct device *bus, char *out, size_t out_len) {
+    size_t pos = 0;
+    int found = 0;
+
+    out[0] = '\0';
+
+    if (!device_is_ready(bus)) {
+        snprintf(out, out_len, "nrdy");
+        return;
+    }
+
+    for (uint8_t addr = 0x08; addr < 0x78; addr++) {
+        uint8_t dummy = 0;
+        int rc = i2c_write(bus, &dummy, 1, addr);
+        if (rc != 0) {
+            rc = i2c_read(bus, &dummy, 1, addr);
+        }
+        if (rc == 0) {
+            pos += snprintf(out + pos, out_len - pos, found == 0 ? "%02X" : ",%02X", addr);
+            found++;
+            if (pos >= out_len) {
+                break;
+            }
+        }
+    }
+
+    if (found == 0) {
+        snprintf(out, out_len, "-");
+    }
+}
 
 static void debug_update_cb(lv_timer_t *timer) {
     ARG_UNUSED(timer);
@@ -280,19 +317,35 @@ static void debug_update_cb(lv_timer_t *timer) {
     touch_handler_get_point(&x, &y, &active);
 
     if (debug_label != NULL) {
-        lv_label_set_text_fmt(debug_label, "ready=%d T=%d x=%u y=%u",
-                              touch_handler_device_ready(), active, x, y);
+        lv_label_set_text_fmt(debug_label, "r=%d id=%s T=%d %u,%u\nI0:%s\nI1:%s",
+                              touch_handler_device_ready(), debug_id, active, x, y,
+                              debug_i2c0, debug_i2c1);
     }
 }
 
 static void debug_create_work_cb(struct k_work *work) {
     ARG_UNUSED(work);
 
+    const struct device *i2c0 = DEVICE_DT_GET(DT_NODELABEL(i2c0));
+    const struct device *i2c1 = DEVICE_DT_GET(DT_NODELABEL(i2c1));
+    uint8_t chip_id = 0;
+
+    scan_i2c(i2c0, debug_i2c0, sizeof(debug_i2c0));
+    scan_i2c(i2c1, debug_i2c1, sizeof(debug_i2c1));
+
+    if (device_is_ready(i2c0) &&
+        i2c_reg_read_byte(i2c0, 0x15, 0xA7, &chip_id) == 0) {
+        snprintf(debug_id, sizeof(debug_id), "0x%02X", chip_id);
+    } else {
+        snprintf(debug_id, sizeof(debug_id), "?");
+    }
+
     debug_label = lv_label_create(lv_layer_top());
     lv_obj_set_style_text_color(debug_label, lv_color_white(), 0);
     lv_obj_set_style_bg_color(debug_label, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(debug_label, LV_OPA_70, 0);
     lv_obj_set_style_pad_all(debug_label, 2, 0);
+    lv_obj_set_style_text_font(debug_label, &lv_font_montserrat_12, 0);
     lv_obj_set_pos(debug_label, 2, 2);
     lv_label_set_text(debug_label, "touch debug");
     lv_timer_create(debug_update_cb, 500, NULL);
