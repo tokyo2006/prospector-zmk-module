@@ -266,3 +266,57 @@ static int swipe_gesture_listener(const zmk_event_t *eh) {
 
 ZMK_LISTENER(prospector_touch_ui, swipe_gesture_listener);
 ZMK_SUBSCRIPTION(prospector_touch_ui, zmk_swipe_gesture_event);
+
+
+#if IS_ENABLED(CONFIG_PROSPECTOR_TOUCH_DEBUG)
+static lv_obj_t *debug_label;
+
+static void debug_update_cb(lv_timer_t *timer) {
+    ARG_UNUSED(timer);
+
+    uint16_t x;
+    uint16_t y;
+    bool active;
+    touch_handler_get_point(&x, &y, &active);
+
+    if (debug_label != NULL) {
+        lv_label_set_text_fmt(debug_label, "ready=%d T=%d x=%u y=%u",
+                              touch_handler_device_ready(), active, x, y);
+    }
+}
+
+static void debug_create_work_cb(struct k_work *work) {
+    ARG_UNUSED(work);
+
+    debug_label = lv_label_create(lv_layer_top());
+    lv_obj_set_style_text_color(debug_label, lv_color_white(), 0);
+    lv_obj_set_style_bg_color(debug_label, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(debug_label, LV_OPA_70, 0);
+    lv_obj_set_style_pad_all(debug_label, 2, 0);
+    lv_obj_set_pos(debug_label, 2, 2);
+    lv_label_set_text(debug_label, "touch debug");
+    lv_timer_create(debug_update_cb, 500, NULL);
+}
+
+static K_WORK_DEFINE(debug_create_work, debug_create_work_cb);
+
+static void debug_schedule_cb(struct k_work *work) {
+    ARG_UNUSED(work);
+
+    if (!zmk_display_is_initialized()) {
+        k_work_schedule(&debug_schedule_work, K_SECONDS(1));
+        return;
+    }
+
+    k_work_submit_to_queue(zmk_display_work_q(), &debug_create_work);
+}
+
+static K_WORK_DELAYABLE_DEFINE(debug_schedule_work, debug_schedule_cb);
+
+static int debug_ui_init(void) {
+    k_work_schedule(&debug_schedule_work, K_SECONDS(3));
+    return 0;
+}
+
+SYS_INIT(debug_ui_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+#endif

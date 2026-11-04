@@ -182,6 +182,22 @@ static void lvgl_input_read(lv_indev_t *indev, lv_indev_data_t *data) {
     data->state = touch_active ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
+bool touch_handler_device_ready(void) {
+    return device_is_ready(DEVICE_DT_GET(TOUCH_NODE));
+}
+
+void touch_handler_get_point(uint16_t *x, uint16_t *y, bool *active) {
+    if (x != NULL) {
+        *x = current_x;
+    }
+    if (y != NULL) {
+        *y = current_y;
+    }
+    if (active != NULL) {
+        *active = touch_active;
+    }
+}
+
 int touch_handler_register_lvgl_indev(void) {
     if (lvgl_indev != NULL) {
         return 0;
