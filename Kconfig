@@ -132,4 +132,8 @@ config PROSPECTOR_TOUCH_INVERT_Y
     bool "Invert touch Y axis"
     default n
 
+config PROSPECTOR_TOUCH_DEBUG
+    bool "Verbose touch debugging"
+    default n
+
 endif
